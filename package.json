@@ -1,0 +1,17 @@
+{
+  "name": "stripe-sample",
+  "version": "1.0.0",
+  "description": "A sample Stripe implementation",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "author": "stripe-samples",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.25.0",
+    "express": "^4.17.1",
+    "mongodb": "^4.3.1",
+    "stripe": "^7.1.0"
+  }
+}
