@@ -22,7 +22,7 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (request, re
 
             // Make sure payment is a from a one-on-one lesson.
             const metaData = event.data.object.metadata;
-            if(!isEmpty(metaData) && metaData[1].startsWith('[One-On-One]')) {
+            if(!isEmpty(metaData) && metaData[1].startsWith('1-on-1')) {
                 // Handles the One on One Payment.
                 await handleOneOnOnePayment(event)
             }

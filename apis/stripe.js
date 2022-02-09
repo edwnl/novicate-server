@@ -1,4 +1,4 @@
-const {l} = require("../utils/utils");
+const {l, isEmpty} = require("../utils/utils");
 const {stripe_api} = require('../config.json')
 const stripe = require('stripe')(`${stripe_api.secret_key}`);
 
@@ -15,7 +15,8 @@ async function transfer(amount, accountID){
     return await stripe.transfers.create({
         amount: amountInCents,
         currency: 'aud',
-        destination: accountID
+        destination: accountID,
+        description: `[Novicate] Payment of ${amount} AUD for One-On-One tutoring session.`
     });
 }
 
@@ -42,4 +43,28 @@ async function verifyWebhook(request, endpointSecret){
     }
 }
 
-module.exports = {transfer, verifyWebhook}
+/**
+ * Retrieves a Stripe account ID using a SimplyBook tutor ID.
+ *
+ * This uses the metadata feature to store a SimplyBook tutor ID inside a connect account on Stripe.
+ *
+ * @param {string} simplybook_id SimplyBook Tutor ID.
+ * @return {string} Stripe account ID.
+ */
+async function getStripeAccountByID(simplybook_id){
+    try{
+        // List all connected accounts
+        const accounts = await stripe.accounts.list();
+
+        // Find the first account which has the matching ID
+        const acc = accounts.data.find(acc =>
+            (!isEmpty(acc.metadata) && acc.metadata.simplybook_id === simplybook_id))
+
+        // Return the account ID
+        if(acc != null) return acc.id
+        return null
+
+    } catch (e) {console.log(e)}
+}
+
+module.exports = {transfer, verifyWebhook, getStripeAccountByID}
