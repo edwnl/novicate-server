@@ -3,6 +3,11 @@ const {getTutorByBookingCode} = require("../apis/simplybook");
 const {getStripeAccount} = require("../database/mongodb");
 const {transfer} = require("../apis/stripe");
 
+/**
+ * Handles a one on one payment from SimplyBook by crediting the tutor's Stripe account.
+ *
+ * @param event The charge.succeeded event.
+ */
 async function handleOneOnOnePayment(event){
     const startMS = Date.now();
     l(`Payment for One-On-One Session received.`)

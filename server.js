@@ -17,10 +17,13 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (request, re
 
     // Handle the event
     switch (event.type) {
+        // If the event is of type charge.succeeded
         case 'charge.succeeded':
+
             // Make sure payment is a from a one-on-one lesson.
             const metaData = event.data.object.metadata;
             if(!isEmpty(metaData) && metaData[1].startsWith('[One-On-One]')) {
+                // Handles the One on One Payment.
                 await handleOneOnOnePayment(event)
             }
             break;
