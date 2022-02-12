@@ -47,4 +47,7 @@ const round = (num) => {
     return Math.round(num * 100) / 100
 }
 
-module.exports = {extractBookingCode, l, isEmpty, round}
+const sleep = (delay) => new Promise((resolve => setTimeout(resolve, delay)))
+
+
+module.exports = {extractBookingCode, l, isEmpty, round, sleep}

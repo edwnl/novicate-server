@@ -1,44 +1,63 @@
 const {l, extractBookingCode, round} = require("../utils/utils");
 const {getTutorByBookingCode} = require("../apis/simplybook");
 const {transfer, getStripeAccountByID} = require("../apis/stripe");
+const {sendDiscordMessage, chargeHandled} = require("../apis/discord");
 
 /**
  * Handles a one on one payment from SimplyBook by crediting the tutor's Stripe account.
  *
  * @param event The charge.succeeded event.
  */
-async function handleOneOnOnePayment(event){
-    const startMS = Date.now();
-    l(`----- Payment for One-On-One Session received. -----`)
+async function handleSimplyBookPayment(payment_intent) {
+    try {
+        const startMS = Date.now();
+        const countryCode = payment_intent.charges.data[0].payment_method_details.country;
+        l(`----- Payment for Tutoring Session received. -----`)
 
-    const charge = event.data.object;
+        // Payment
+        const amount = payment_intent.amount / 100;
+        const commission = amount * 0.3
+        const fee = round((countryCode === "AU" ? (amount * 0.0175) : (amount * 0.029)) + 0.3)
+        const tutorPay = Math.round(amount - commission - fee);
 
-    // Payment - Fees are not provided by stripe, maybe can be calculated?
-    const amount = charge.amount / 100;
-    const tutorPay = amount * 0.7;
-    // TODO : add fee calcualtion based on card country
-    l(`Price: ${amount} AUD | Novicate Commission: ${amount * 0.3} AUD | Tutor Pay: ${tutorPay} AUD`)
+        l(`Price: ${amount} AUD | Commission: ${commission} AUD | Stripe Fees: ${fee} AUD | Tutor Pay: ${tutorPay} AUD`)
 
-    // Extracting Booking Code from Payment Metadata
-    const bookingCode = extractBookingCode(charge.metadata[1])
-    l(`Booking code: ${bookingCode}`)
+        // Extracting Booking Code from Payment Metadata
+        const bookingCode = extractBookingCode(payment_intent.metadata.item_1)
+        l(`Booking code: ${bookingCode}`)
 
-    // Find Provider Using SimplyBook API
-    const tutor = await getTutorByBookingCode(bookingCode);
-    l(`Provider: ${tutor.name} | Provider ID: ${tutor.id}`)
+        // Find Provider Using SimplyBook API
+        const tutor = await getTutorByBookingCode(bookingCode);
+        l(`Provider: ${tutor.name} | Provider ID: ${tutor.id}`)
 
-    // Find stripe account using MongoDB Database
-    const stripeAccount = await getStripeAccountByID(`${tutor.id}`);
-    if(stripeAccount != null) {
-        // Transfer payment amount to connected stripe account.
-        await transfer(tutorPay, stripeAccount)
-        l(`${tutorPay} AUD transferred to stripe account ${stripeAccount}.` )
-    } else {
-        // If Stripe account was not found.
-        l(`Error! Payment received but transfer could not be made:`)
-        l(`No stripe account was found for tutor ${tutor.name}(${tutor.id}.`)
+        // Find stripe account by searching Stripe Connected Accounts
+        const stripeAccount = await getStripeAccountByID(`${tutor.id}`);
+        if (stripeAccount != null) {
+            // Transfer payment amount to connected stripe account.
+            tutor.stripe_account = stripeAccount
+            await transfer(tutorPay, stripeAccount)
+            l(`${tutorPay} AUD transferred to stripe account ${stripeAccount}.`)
+        } else {
+            // If Stripe account was not found.
+            l(`Error! Payment received but transfer could not be made: No stripe account was found for tutor ${tutor.name} (${tutor.id}).`)
+
+            await sendDiscordMessage("Stripe Account Not Found", `${tutorPay} AUD could not be transferred to ${tutor.name} (ID: ${tutor.id}). \n
+                Please attach the SimplyBook ID for the tutor's connected account as metadata on Stripe.`, `FF0000`)
+            return
+        }
+
+        await chargeHandled(bookingCode, {
+            amount: amount, commission: commission, fee: fee, tutor_pay: tutorPay
+        }, tutor)
+
+        l(`----- Payment for Tutoring Session handled. Time taken: ${round((Date.now() - startMS) / 1000)} seconds. -----`)
+    } catch (e) {
+        const stripe_error = e.message
+        const msg = stripe_error ? stripe_error : e
+
+        l(msg)
+        await sendDiscordMessage(stripe_error ? "Stripe Error" : "Unknown Error", msg, `FF0000`)
     }
-    l(`----- Payment for One-On-One Session handled. Time taken: ${round((Date.now() - startMS) / 1000)} seconds. -----`)
 }
 
-module.exports = {handleOneOnOnePayment}
+module.exports = {handleSimplyBookPayment}

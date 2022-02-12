@@ -1,9 +1,10 @@
 const express = require('express')
 const path = require('path');
 const {verifyWebhook} = require("./apis/stripe");
-const {handleOneOnOnePayment} = require("./webhooks/chargeSucceeded");
-const {l, isEmpty} = require("./utils/utils");
+const {handleSimplyBookPayment} = require("./webhooks/chargeSucceeded");
+const {l, isEmpty, sleep} = require("./utils/utils");
 const {stripe_api} = require(path.resolve( __dirname, './config.json'))
+const stripe = require('stripe')(`${stripe_api.secret_key}`);
 
 const app = express();
 
@@ -17,16 +18,24 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (request, re
 
     // Handle the event
     switch (event.type) {
-        // If the event is of type charge.succeeded
-        case 'charge.succeeded':
+        case 'checkout.session.completed':
+            const payment_intent = event.data.object.payment_intent;
 
-            // Make sure payment is a from a one-on-one lesson.
-            const metaData = event.data.object.metadata;
-            if(!isEmpty(metaData) && metaData[1].startsWith('1-on-1')) {
-                // Handles the One on One Payment.
-                await handleOneOnOnePayment(event)
+            // Waiting 2 seconds to allow for any updates.
+            await sleep(2000)
+
+            // Retrieve the payment from stripe (once the metadata is inserted by SimplyBook)
+            const paymentIntent = await stripe.paymentIntents.retrieve(payment_intent)
+
+            // If the payment has metadata
+            if(!isEmpty(paymentIntent.metadata)){
+                const service = paymentIntent.metadata.item_1
+                // Using the service to verify that the payment was from SimplyBook.
+                if(service.startsWith('1-on-1') || service.startsWith('Group')){
+                    await handleSimplyBookPayment(paymentIntent)
+                }
             }
-            break;
+            break
         default:
             // console.log(`Unhandled Event: ${event.type}.`);
     }

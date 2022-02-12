@@ -5,19 +5,23 @@ const stripe = require('stripe')(`${stripe_api.secret_key}`);
 /**
  * Transfers an amount to a stripe account from main account's balance.
  *
- * @param {double} amount The amount to transfer in AUD.
+ * @param {number} amount The amount to transfer in AUD. (Must be an Int)
  * @param {string} accountID The ID of the Stripe account to transfer to.
  */
 async function transfer(amount, accountID){
-    // Convert amount to cents as Stripe handles payments using cents.
-    const amountInCents = amount * 100;
+    try {
+        // Convert amount to cents as Stripe handles payments using cents.
+        const amountInCents = amount * 100;
 
-    return await stripe.transfers.create({
-        amount: amountInCents,
-        currency: 'aud',
-        destination: accountID,
-        description: `[Novicate] Payment of ${amount} AUD for One-On-One tutoring session.`
-    });
+        return await stripe.transfers.create({
+            amount: amountInCents,
+            currency: 'aud',
+            destination: accountID,
+            description: `[Novicate] Payment of ${amount} AUD for tutoring session.`
+        });
+    } catch (e){
+        console.log(e)
+    }
 }
 
 /**
