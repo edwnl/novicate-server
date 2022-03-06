@@ -24,13 +24,15 @@ app.post('/novicate/webhook', express.raw({type: 'application/json'}), async (re
   // Handle the event
   switch (event.type) {
     case 'checkout.session.completed':
-      const payment_intent = event.data.object.payment_intent;
+      const obj = event.data.object;
+
+      if(obj.mode === 'subscription' || obj.payment_intent == null) break;
 
       // Waiting 2 seconds to allow for any updates.
       await sleep(2000);
 
       // Retrieve the payment once the metadata is inserted by SimplyBook
-      const paymentIntent = await stripe.paymentIntents.retrieve(payment_intent);
+      const paymentIntent = await stripe.paymentIntents.retrieve(obj.payment_intent);
 
       // If the payment has metadata
       if (!isEmpty(paymentIntent.metadata)) {
@@ -41,6 +43,17 @@ app.post('/novicate/webhook', express.raw({type: 'application/json'}), async (re
         }
       }
       break;
+    case 'invoice.payment_succeeded':
+      const invoice = event.data.object
+        const invoicePaymentIntent = invoice.payment_intent
+        const description = invoice.lines.data[0].description
+
+        await stripe.paymentIntents.update(invoicePaymentIntent, {
+          description: `${description}`
+        })
+
+        l(`Description of payment ${invoicePaymentIntent} updated to: ${description}.`)
+    break;
   }
 
   // Return a 200 response to acknowledge receipt of the event

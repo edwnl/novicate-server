@@ -34,13 +34,13 @@ async function handleSimplyBookPayment(payment_intent) {
     // Payment Calculations
     const amount = payment_intent.amount / 100; // Total Amount Received in Stripe (Including GST)
     const gst = booking.service.price * 0.1; // Calculate GST from original service price
-    const fee = amount * (country === 'AU' ? 0.0175 : 0.029) + 0.3; // Stripe API fees (deducted from total amount received)
+    const stripeFee = amount * (country === 'AU' ? 0.0175 : 0.029) + 0.3; // Stripe API fees (deducted from total amount received)
 
-    const tutorPay = (amount - gst - fee) * 0.7; // Tutors are paid 70% of the total amount less gst, strip fees.
-    const commission = amount - gst - tutorPay; // Novicate keeps whatever is left less gst.
+    const tutorPay = ((amount - gst ) * 0.7) - stripeFee; // Tutors are paid 70% of the total amount less gst, strip fees.
+    const commission = amount - tutorPay; // Novicate keeps whatever is left less gst.
 
     l(`Price: ${round(amount)} AUD | Commission: ${round(commission)} AUD | Tutor Pay: ${round(tutorPay)} AUD`);
-    l(`Stripe Fees: ${round(fee)} AUD | GST: ${round(gst)}`);
+    l(`Stripe Fees: ${round(stripeFee)} AUD | GST: ${round(gst)}`);
 
     // Find stripe account by searching Stripe Connected Accounts
     const stripeAccount = await getStripeAccountByID(`${tutor.id}`);
@@ -56,7 +56,7 @@ async function handleSimplyBookPayment(payment_intent) {
     await paymentHandled(bookingCode, {
       amount: round(amount),
       commission: round(commission),
-      fee: round(fee),
+      fee: round(stripeFee),
       tutor_pay: round(tutorPay),
       gst: round(gst)
     }, tutor);

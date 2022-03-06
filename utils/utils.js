@@ -5,7 +5,7 @@
  * @return {string|null} The extracted booking code. Null if the string is empty.
  *
  * Example: 1-on-1 Test (Wednesday, Feb 16 2022 07:00 AM, 1abd2pdr1) - 1 x 2.20
- * The booking code is 1abd16g0p.
+ * The booking code is 1abd2pdr1.
  */
 const extractBookingCode = (s) => {
   if (!s) return null;
@@ -57,7 +57,5 @@ const round = (num) => {
  * @return {Promise<unknown>} A promise which resolves in a specified amount of time.
  */
 const sleep = (delay) => new Promise(((resolve) => setTimeout(resolve, delay)));
-
-
 
 module.exports = {extractBookingCode, l, isEmpty, round, sleep};

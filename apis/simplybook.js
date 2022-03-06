@@ -74,10 +74,10 @@ const getBookingByBookingCode = async (code) => {
   }
 };
 
-async function test(){
-  console.log(await getBookingByBookingCode('1abd2oi4q'))
-}
-
-test()
+// async function test(){
+//   console.log(await getBookingByBookingCode('1abd2oi4q'))
+// }
+//
+// test()
 
 module.exports = {getBookingByBookingCode};

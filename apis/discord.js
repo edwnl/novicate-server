@@ -48,7 +48,7 @@ async function paymentHandled(booking_code, price_data, tutor_data){
             value: `SimplyBook ID: ${tutor_data.id}`
         },
         {
-            name: "Novicate Commission (GST Excluded)",
+            name: "Novicate Commission (GST Included)",
             value: `${price_data.commission} AUD`,
         },
         {
