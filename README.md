@@ -5,9 +5,7 @@ When a booking is made and payment is received, this app will transfer the speci
 
 Once finished, a message is sent to a specified discord channel.
 
-![Example of a Discord Message](https://github.com/edwnl/novicate-server/assets/19798018/08ad0a84-e432-48d7-850b-3bf98a5dddcb)
-
-Website: `novicate.com` (in development)
+<img width="441" alt="Screenshot 2023-08-14 at 4 18 57 pm" src="https://github.com/edwnl/novicate-server/assets/19798018/86f37a2a-57c5-4379-af44-39ee20ece362">
 
 To run the server, create a file named `config.js` with the following format:
 ```
